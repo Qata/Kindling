@@ -1,0 +1,41 @@
+module ListExt
+
+fun rotate(step : int32, inout lst : list<a, n>) = {
+    match n {
+        0 => ()
+        _ => {
+            let normalizedStep = (step % cast(n) + cast(n)) % cast(n)
+
+            // Create a new list to hold the rotated values
+            let mut result: a[n] = zeros()
+
+            // Populate the new list with rotated values
+            for i in 0 .. n {
+                result[i] = lst.data[(i + normalizedStep) % cast(n)]
+            }
+
+            lst.data = result
+            ()
+        }
+    }
+}
+
+fun rotated(step : int32, lst : list<a, n>) : list<a, n> = {
+    match n {
+        0 => lst
+        _ => {
+            // Normalize the step to be within the range of the list length
+            let normalizedStep = (step % cast(n) + cast(n)) % cast(n)
+
+            // Create a new list to hold the rotated values
+            let mut result: a[n] = zeros()
+
+            // Populate the new list with rotated values
+            for i in 0 .. n {
+                result[i] = lst.data[(i + normalizedStep) % cast(n)]
+            }
+
+            { data := result, length := cast(n) }
+        }
+    }
+}
