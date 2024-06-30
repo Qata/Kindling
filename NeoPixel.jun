@@ -85,42 +85,41 @@ fun update(inout model : Model<nStrips, nPixels>) = {
 }
 
 fun _update(inout model : Model<nStrips, nPixels>) = {
-    for i : uint32 in 0 .. model.states.length {
-        let mut operation = model.states.data[i].operation
-        model.states.data[i].operation = match operation {
-            just(op) => {
-                let mut operation = op
-                Time:every(
-                    operation.interval,
-                    inout operation.timer
-                ) |> Signal:sink(
-                    (_) => {
-                        let mut pixels = model.states.data[i].pixels
-                        pixels = applyOperation(
-                            operation,
-                            pixels
-                        )
-                        ()
+    Signal:constant(
+        model.states
+    ) |> Signal:map(
+        (states) => {
+            states |> List:map(
+                (state) => {
+                    let mut state = state
+                    match state.operation {
+                        just(op) => {
+                            let mut operation = op
+                            Time:every(
+                                operation.interval,
+                                inout operation.timer
+                            ) |> Signal:map(
+                                (_) => {
+                                    just(operation)
+                                }
+                            ) |> Signal:latch(inout state.operation) |> Signal:map(
+                                (_) => {
+                                    applyOperation(
+                                        operation,
+                                        state.pixels
+                                    )
+                                }
+                            ) |> Signal:latch(inout state.pixels) |> Signal:toUnit()
+                        }
+                        nothing() => {
+                            Signal:constant(())
+                        }
                     }
-                )
-                // Time:every(
-                //     operation.interval,
-                //     inout operation.timer
-                // ) |> Signal:toUnit() |> Signal:sink(
-                //     (_) => {
-                //         let mut pixels = model.states.data[i].pixels
-                //         model.states.data[i].pixels = applyOperation(
-                //             operation,
-                //             inout pixels
-                //         )
-                //     }
-                // )
-                // model.states.data[i].pixels = pixels
-                just(operation)
-            }
-            nothing() => nothing()
+                    state
+                }
+            )
         }
-    }
+    )// ) |> Signal:latch(inout model.states)
 }
 
 fun applyOperation(operation : Operation, pixels : list<rgb, nPixels>): list<rgb, nPixels> = {
