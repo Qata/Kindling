@@ -1,16 +1,41 @@
 module ListExt
 
+fun range(lowerBound : from, upperBound : upTo): list<int32, upTo - from> = {
+    let length: int32 = cast(upTo - from)
+    let mut result: a[length] = zeros()
+
+    for i : int32 in 0i32 .. length {
+        result[i] = Math:mapRange(
+            i |> toFloat(),
+            from |> toFloat(),
+            upTo |> toFloat(),
+            0.0,
+            length |> toFloat()
+        ) |> toInt32()
+    }
+
+    { data := result, length := cast(length) }
+}
+
+fun enumerated(lst : list<a, n>) : list<(uint32, a), n> = {
+    let mut offset = 0u32
+    let mut result: (uint32, a)[n] = zeros()
+    for i in 0u32 .. cast(lst.length) {
+        result[i] = (offset, lst.data[(i)])
+        offset += 1
+    }
+
+    { data := result, length := cast(n) }
+}
+
 fun rotate(step : int32, inout lst : list<a, n>) = {
     match n {
         0 => ()
         _ => {
             let normalizedStep = (step % cast(n) + cast(n)) % cast(n)
-
-            // Create a new list to hold the rotated values
             let mut result: a[n] = zeros()
 
-            // Populate the new list with rotated values
-            for i in 0 .. n {
+            for i in 0 .. cast(lst.length) {
                 result[i] = lst.data[(i + normalizedStep) % cast(n)]
             }
 
@@ -24,18 +49,22 @@ fun rotated(step : int32, lst : list<a, n>) : list<a, n> = {
     match n {
         0 => lst
         _ => {
-            // Normalize the step to be within the range of the list length
             let normalizedStep = (step % cast(n) + cast(n)) % cast(n)
-
-            // Create a new list to hold the rotated values
             let mut result: a[n] = zeros()
 
-            // Populate the new list with rotated values
-            for i in 0 .. n {
+            for i in 0 .. cast(lst.length) {
                 result[i] = lst.data[(i + normalizedStep) % cast(n)]
             }
 
             { data := result, length := cast(n) }
         }
     }
+}
+
+fun replicateList(nElements : uint32, elements : list<t, n>) : list<t, m> = {
+    let mut ret : t[m] = zeros()
+    for i in 0 .. m {
+        ret[i] = elements.data[i % cast(elements.length)]
+    }
+    { data := ret, length := nElements }
 }

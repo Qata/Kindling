@@ -36,8 +36,6 @@ fun actions(): sig<Action> = {
     )
 }
 
-
-
 fun setup() = ()
 fun loop() = {
     Signal:foldP(

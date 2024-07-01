@@ -5,14 +5,13 @@ open(Io, Color, Time)
 // The ptr here should be a Adafruit_NeoPixel object
 type RawDevice = device(ptr)
 
-alias color = { r : uint8, g : uint8, b : uint8, w : uint8 }
-
 alias DeviceDescriptor = {
     pin : uint16
 }
 
 type Function =
-    rotate(either<unit, unit>)
+    rotate(int16)
+    | set(rgb)
 
 alias Operation = {
     function : Function,
@@ -21,32 +20,45 @@ alias Operation = {
 }
 
 alias PixelState<nPixels : int> = {
-    pixels: list<rgb, nPixels>,
-    operation: maybe<Operation>,
+    previousPixels : list<rgb, nPixels>,
+    pixels : list<rgb, nPixels>,
+    operation : maybe<Operation>,
     pin : uint16,
-    device: RawDevice
+    device : RawDevice
 }
 
 alias Model<nStrips : int, nPixels : int> = {
     states : list<PixelState<nPixels>, nStrips>
 }
 
-fun initialState(descriptors : DeviceDescriptor[nStrips], nPixels : uint16): Model<nStrips, m> = {
+fun initialState(descriptors : DeviceDescriptor[nStrips], nPixels : uint16) : Model<nStrips, m> = {
     {
         states := { data := descriptors, length := cast(nStrips) } |> List:map(
             (descriptor) => {
+                let device = makeDevice(descriptor.pin, cast(nPixels))
                 {
+                    previousPixels := readPixels(device),
                     pixels := { data := zeros(), length := cast(nPixels) },
                     operation := nothing(),
                     pin := descriptor.pin,
-                    device := makeDevice(descriptor.pin, cast(nPixels))
+                    device := device
                 }
             }
         )
     }
 }
 
-fun makeDevice(pin : uint16, pixels : uint16): RawDevice = {
+fun readPixels(device : RawDevice): list<rgb, n> = {
+    let mut color = 0u32
+    let mut pixels: rgb[n] = zeros()
+    for i in 0u16 .. cast(n) {
+        getPixelColor(i, device)
+        pixels[i] = { r := toUInt8(color >> 16u32), g := toUInt8(color >> 8u32), b := toUInt8(color) }
+    }
+    { data := pixels, length := cast(n) }
+}
+
+fun makeDevice(pin : uint16, pixels : uint16) : RawDevice = {
     var ret : ptr
     #ret = Adafruit_NeoPixel(pixels, pin, NEO_GRB + NEO_KHZ800);#
     NeoPixel:device(ret)
@@ -63,17 +75,26 @@ fun update(inout model : Model<nStrips, nPixels>) = {
                         operation.interval,
                         inout operation.timer
                     ) |> Signal:map(
-                        (_) => {
-                            just(operation)
-                        }
-                    ) |> Signal:latch(inout state.operation) |> Signal:map(
-                        (_) => {
-                            applyOperation(
-                                operation,
-                                state.pixels
-                            )
-                        }
-                    ) |> Signal:latch(inout state.pixels) |> Signal:toUnit()
+                        (_) => just(operation)
+                    ) |> Signal:latch(
+                        inout state.operation
+                    ) |> Signal:map(
+                        (_) => state.pixels
+                    ) |> Signal:latch(
+                        inout state.previousPixels
+                    ) |> Signal:map(
+                        (_) => applyOperation(
+                            operation,
+                            state.previousPixels
+                        )
+                    ) |> Signal:latch(
+                        inout state.pixels
+                    ) |> Signal:map(
+                        (_) => updatePixels(
+                            state
+                        )
+                    ) |> Signal:toUnit(
+                    )
                 }
                 nothing() => {
                     Signal:constant(())
@@ -84,87 +105,109 @@ fun update(inout model : Model<nStrips, nPixels>) = {
     )
 }
 
-fun _update(inout model : Model<nStrips, nPixels>) = {
-    Signal:constant(
-        model.states
-    ) |> Signal:map(
-        (states) => {
-            states |> List:map(
-                (state) => {
-                    let mut state = state
-                    match state.operation {
-                        just(op) => {
-                            let mut operation = op
-                            Time:every(
-                                operation.interval,
-                                inout operation.timer
-                            ) |> Signal:map(
-                                (_) => {
-                                    just(operation)
-                                }
-                            ) |> Signal:latch(inout state.operation) |> Signal:map(
-                                (_) => {
-                                    applyOperation(
-                                        operation,
-                                        state.pixels
-                                    )
-                                }
-                            ) |> Signal:latch(inout state.pixels) |> Signal:toUnit()
-                        }
-                        nothing() => {
-                            Signal:constant(())
-                        }
-                    }
-                    state
-                }
+// fun _update(inout model : Model<nStrips, nPixels>) = {
+//     Signal:constant(
+//         model.states
+//     ) |> Signal:map(
+//         (states) => {
+//             states |> List:map(
+//                 (state) => {
+//                     let mut state = state
+//                     match state.operation {
+//                         just(op) => {
+//                             let mut operation = op
+//                             Time:every(
+//                                 operation.interval,
+//                                 inout operation.timer
+//                             ) |> Signal:map(
+//                                 (_) => {
+//                                     just(operation)
+//                                 }
+//                             ) |> Signal:latch(
+//                                 inout state.operation
+//                             ) |> Signal:map(
+//                                 (_) => {
+//                                     applyOperation(
+//                                         operation,
+//                                         state.pixels
+//                                     )
+//                                 }
+//                             ) |> Signal:latch(
+//                                 inout state.pixels
+//                             ) |> Signal:toUnit(
+//                             )
+//                         }
+//                         nothing() => {
+//                             Signal:constant(())
+//                         }
+//                     }
+//                     state
+//                 }
+//             )
+//         }
+//     ) |> Signal:latch(inout model.states)
+// }
+
+fun applyOperation(
+    operation : Operation, 
+    pixels : list<rgb, nPixels>
+) : list<rgb, nPixels> = {
+    match operation.function {
+        rotate(step) => {
+            ListExt:rotated(cast(step), pixels)
+        }
+        set(color) => {
+            pixels |> List:map(
+                (_) => color
             )
         }
-    )// ) |> Signal:latch(inout model.states)
-}
-
-fun applyOperation(operation : Operation, pixels : list<rgb, nPixels>): list<rgb, nPixels> = {
-    // let nextPixels = List:
-    match operation.function {
-        rotate(direction) => {
-            match direction {
-                left(_) => ()
-                right(_) => ()
-            }
-        }
     }
-    { data := zeros(), length := cast(nPixels) }
 }
 
-fun setPixelColors(colors : list<color, n>, strip : RawDevice) = {
-    let device(p) = strip
-    colors |> List:map(
-        (color) => {
-            let r = color.r
-            let g = color.g
-            let b = color.b
-            let w = color.w
-            # ((Adafruit_NeoPixel*) p)->setPixelColor(n, r, g, b, w); #
+fun diffPixels(current : list<rgb, nPixels>, next : list<rgb, nPixels>) : list<maybe<rgb>, nPixels> = {
+    List:zip(
+       current,
+       next
+    ) |> List:map(
+        (tup) => {
+            let (curr, next) = tup
+            if eq(curr, next)
+                nothing()
+            else
+                just(next)
         }
     )
 }
 
-fun setPixelColor(n : uint16, c : color, strip : RawDevice) : unit = {
-    let device(p) = strip
-    let r = c.r
-    let g = c.g
-    let b = c.b
-    let w = c.w
-    # ((Adafruit_NeoPixel*) p)->setPixelColor(n, r, g, b, w); #
+fun updatePixels(state : PixelState<n>) = {
+    diffPixels(
+        state.previousPixels,
+        state.pixels
+    ) |> ListExt:enumerated(
+    ) |> List:iter(
+        (tup) => {
+            let (index, rgb) = tup
+            match rgb {
+                just(pixel) => setPixelColor(cast(index), pixel, state.device)
+                nothing() => ()
+            }
+        }
+    )
 }
 
-fun makeColor(r : uint8, g : uint8, b : uint8) : color =
-    { r := r, g := g, b := b, w := 0u8 }
+fun setPixelColor(n : uint16, color : rgb, strip : RawDevice) : unit = {
+    let device(p) = strip
+    let r = color.r
+    let g = color.g
+    let b = color.b
+    # ((Adafruit_NeoPixel*) p)->setPixelColor(n, r, g, b); #
+}
 
-fun getPixelColor(n : uint16, strip : RawDevice) : color = {
+fun getPixelColor(n : uint16, strip : RawDevice) : rgb = {
     let device(p) = strip
     let mut numRep : uint32 = 0
     # numRep = ((Adafruit_NeoPixel*) p)->getPixelColor(n); #
-    { r := toUInt8(numRep >> 16u32), g := toUInt8(numRep >> 8u32), b := toUInt8(numRep), w := 0u8 }
+    { r := toUInt8(numRep >> 16u32), g := toUInt8(numRep >> 8u32), b := toUInt8(numRep) }
 }
 
 fun setBrightness(level : uint8, strip : RawDevice) : unit = {
