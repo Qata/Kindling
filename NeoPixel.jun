@@ -158,7 +158,9 @@ fun applyOperation(
         }
         set(color) => {
             pixels |> List:map(
-                (_) => color
+                (_) => {
+                    { r := color.r, g := color.g, b := color.b }
+                }
             )
         }
     }
