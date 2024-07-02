@@ -1,50 +1,38 @@
 module TEA
 
-let mut tState1 = Time:state
-let mut tState2 = Time:state
+// let mut state : Model<1, 150> = initialState(
+//     { pin := 7 }, 
+//     150
+// )
 
-type Action = increment() | decrement()
+type Action = begin(NeoPixel:Operation) | end()
 
-alias Model = {
-    counter : int32
-}
-
-let initialState : Model = { counter := 0 }
-let mut state : Model = initialState
-
-fun update(action : Action, model : Model): Model = {
-    let mut model = model
-    match action {
-        increment => model.counter += 1
-        decrement => model.counter -= 1
-    }
-    model
-}
-
-fun actions(): sig<Action> = {
-    Signal:merge(
-        Time:every(1000, inout tState1) |> Signal:map(
-            (_) => {
-                increment()
-            }
-        ),
-        Time:every(2000, inout tState2) |> Signal:map(
-            (_) => {
-                decrement()
-            }
-        )
-    )
-}
+// fun actions(): sig<Action> = {
+//     Signal:constant(begin(NeoPixel:set(Color:red)))
+//     Signal:merge(
+//         Time:every(1000, inout tState1) |> Signal:map(
+//             (_) => {
+//                 increment()
+//             }
+//         ),
+//         Time:every(2000, inout tState2) |> Signal:map(
+//             (_) => {
+//                 decrement()
+//             }
+//         )
+//     )
+// }
 
 fun setup() = ()
 fun loop() = {
-    Signal:foldP(
-        update,
-        inout state,
-        actions()
-    ) |> Signal:map(
-        (state) => {
-            Io:printInt(state.counter)
-        }
-    )
+    // Signal:foldP(
+    //     NeoPixel:update,
+    //     inout state,
+    //     actions()
+    // ) |> Signal:map(
+    //     (state) => {
+    //         Io:printInt(state.counter)
+    //     }
+    // )
+    ()
 }

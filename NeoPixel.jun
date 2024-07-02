@@ -11,7 +11,7 @@ alias DeviceDescriptor = {
 
 type Function =
     rotate(int16)
-    | set(rgb)
+    | set(uint32) // workaround for a compiler bug
 
 alias Operation = {
     function : Function,
@@ -105,49 +105,6 @@ fun update(inout model : Model<nStrips, nPixels>) = {
     )
 }
 
-// fun _update(inout model : Model<nStrips, nPixels>) = {
-//     Signal:constant(
-//         model.states
-//     ) |> Signal:map(
-//         (states) => {
-//             states |> List:map(
-//                 (state) => {
-//                     let mut state = state
-//                     match state.operation {
-//                         just(op) => {
-//                             let mut operation = op
-//                             Time:every(
-//                                 operation.interval,
-//                                 inout operation.timer
-//                             ) |> Signal:map(
-//                                 (_) => {
-//                                     just(operation)
-//                                 }
-//                             ) |> Signal:latch(
-//                                 inout state.operation
-//                             ) |> Signal:map(
-//                                 (_) => {
-//                                     applyOperation(
-//                                         operation,
-//                                         state.pixels
-//                                     )
-//                                 }
-//                             ) |> Signal:latch(
-//                                 inout state.pixels
-//                             ) |> Signal:toUnit(
-//                             )
-//                         }
-//                         nothing() => {
-//                             Signal:constant(())
-//                         }
-//                     }
-//                     state
-//                 }
-//             )
-//         }
-//     ) |> Signal:latch(inout model.states)
-// }
-
 fun applyOperation(
     operation : Operation, 
     pixels : list<rgb, nPixels>
@@ -157,11 +114,14 @@ fun applyOperation(
             ListExt:rotated(cast(step), pixels)
         }
         set(color) => {
-            pixels |> List:map(
-                (_) => {
-                    { r := color.r, g := color.g, b := color.b }
-                }
-            )
+            // workaround for a compiler bug
+            let mut ret : list<rgb, nPixels> = { data := zeros(), length := cast(nPixels) }
+            for i in 0 .. nPixels {
+                ret.data[i].r = toUInt8(color >> 16u32)
+                ret.data[i].g = toUInt8(color >> 8u32)
+                ret.data[i].b = toUInt8(color)
+            }
+            ret
         }
     }
 }
@@ -245,3 +205,46 @@ fun canShow(strip : RawDevice) : bool = {
     # ret = ((Adafruit_NeoPixel*) p)->canShow(); #
     ret
 }
+
+// fun _update(inout model : Model<nStrips, nPixels>) = {
+//     Signal:constant(
+//         model.states
+//     ) |> Signal:map(
+//         (states) => {
+//             states |> List:map(
+//                 (state) => {
+//                     let mut state = state
+//                     match state.operation {
+//                         just(op) => {
+//                             let mut operation = op
+//                             Time:every(
+//                                 operation.interval,
+//                                 inout operation.timer
+//                             ) |> Signal:map(
+//                                 (_) => {
+//                                     just(operation)
+//                                 }
+//                             ) |> Signal:latch(
+//                                 inout state.operation
+//                             ) |> Signal:map(
+//                                 (_) => {
+//                                     applyOperation(
+//                                         operation,
+//                                         state.pixels
+//                                     )
+//                                 }
+//                             ) |> Signal:latch(
+//                                 inout state.pixels
+//                             ) |> Signal:toUnit(
+//                             )
+//                         }
+//                         nothing() => {
+//                             Signal:constant(())
+//                         }
+//                     }
+//                     state
+//                 }
+//             )
+//         }
+//     ) |> Signal:latch(inout model.states)
+// }
