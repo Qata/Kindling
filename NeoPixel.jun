@@ -27,7 +27,7 @@ alias Operation = {
     timer : timerState
 }
 
-alias PixelState<nPixels : int> = {
+alias Line<nPixels : int> = {
     previousPixels : list<color, nPixels>,
     pixels : list<color, nPixels>,
     operation : maybe<Operation>,
@@ -35,8 +35,8 @@ alias PixelState<nPixels : int> = {
     device : RawDevice
 }
 
-alias Model<nStrips : int, nPixels : int> = {
-    states : list<PixelState<nPixels>, nStrips>
+alias Model<nLines : int, nPixels : int> = {
+    lines : list<Line<nPixels>, nLines>
 }
 
 let mut actionsTimerState = Time:state
@@ -61,12 +61,15 @@ fun actions(
             500,
             just(1)
         )
-    ) |> Signal:dropRepeats(inout prevAction) |> Signal:meta()
+    ) |> Signal:dropRepeats(
+        inout prevAction
+    ) |> Signal:meta(
+    )
 }
 
-fun initialState(descriptors : DeviceDescriptor[nStrips], nPixels : uint16) : Model<nStrips, m> = {
+fun initialState(descriptors : DeviceDescriptor[nLines], nPixels : uint16) : Model<nLines, m> = {
     {
-        states := { data := descriptors, length := cast(nStrips) } |> List:map(
+        lines := { data := descriptors, length := cast(nLines) } |> List:map(
             (descriptor) => {
                 let device = makeDevice(descriptor.pin, cast(nPixels))
                 {
@@ -101,14 +104,14 @@ fun makeDevice(pin : uint16, pixels : uint16) : RawDevice = {
     NeoPixel:device(ret)
 }
 
-// fun updateAction(action : inout state : PixelState<nPixels>) = {
+// fun updateAction(action : inout state : Line<nPixels>) = {
 //     match action {
 //         run(fn) => ()
 
 //     }
 // }
 
-fun updateOperation(state : PixelState<nPixels>) : PixelState<nPixels> = {
+fun updateOperation(state : Line<nPixels>) : Line<nPixels> = {
     let mut state = state
     match state.operation {
         just(op) => {
@@ -117,7 +120,9 @@ fun updateOperation(state : PixelState<nPixels>) : PixelState<nPixels> = {
                 operation.interval,
                 inout operation.timer
             ) |> Signal:map(
-                (_) => just(operation)
+                (_) => {
+                    just(operation)
+                }
             ) |> Signal:latch(
                 inout state.operation
             ) |> Signal:map(
@@ -149,7 +154,7 @@ type Update =
     action(Action)
     | operation()
 
-fun __update(act : maybe<Action>, model : Model<nStrips, nPixels>) : Model<nStrips, nPixels> = {
+fun __update(act : maybe<Action>, model : Model<nLines, nPixels>) : Model<nLines, nPixels> = {
     let mut model = model
     Signal:mergeMany(
         {
@@ -163,17 +168,15 @@ fun __update(act : maybe<Action>, model : Model<nStrips, nPixels>) : Model<nStri
         (update) => {
             match update {
                 action(action) => {
-                    ()
+                    match action {
+                        run(fn) => {
+                            ()
+                        }
+                    }
                 }
                 operation() => {
-                    model.states |> List:map(
-                        (state) => {
-                            state.operation |> Maybe:map(
-                                (operation) => {
-                                    ()
-                                }
-                            )
-                        }
+                    model.lines |> List:map(
+                        updateOperation
                     )
                     ()
                 }
@@ -181,21 +184,11 @@ fun __update(act : maybe<Action>, model : Model<nStrips, nPixels>) : Model<nStri
         }
     )
     model
-    // {
-    //     states := {
-    //         model.states |> List:map(
-    //             (state) => {
-    //                 let mut state = state
-    //                 updateOperation(inout state)
-    //             }
-    //         )
-    //     }
-    // }
 }
 
-fun update(action : Action, model : Model<nStrips, nPixels>) : Model<nStrips, nPixels> = {
+fun update(action : Action, model : Model<nLines, nPixels>) : Model<nLines, nPixels> = {
     let mut model = model
-    model.states = model.states |> List:map(
+    model.lines = model.lines |> List:map(
         (state) => {
             let mut state = state
             match state.operation {
@@ -271,7 +264,7 @@ fun diffPixels(current : list<color, nPixels>, next : list<color, nPixels>) : li
     )
 }
 
-fun updatePixels(state : PixelState<n>) = {
+fun updatePixels(state : Line<n>) = {
     diffPixels(
         state.previousPixels,
         state.pixels
@@ -287,14 +280,14 @@ fun updatePixels(state : PixelState<n>) = {
     )
 }
 
-fun setPixelColor(n : uint16, color : color, strip : RawDevice) : unit = {
-    let device(p) = strip
+fun setPixelColor(n : uint16, color : color, line : RawDevice) : unit = {
+    let device(p) = line
     let RGB(r, g, b) = color
     # ((Adafruit_NeoPixel*) p)->setPixelColor(n, r, g, b); #
 }
 
-fun getPixelColor(n : uint16, strip : RawDevice) : color = {
-    let device(p) = strip
+fun getPixelColor(n : uint16, line : RawDevice) : color = {
+    let device(p) = line
     let mut numRep : uint32 = 0
     # numRep = ((Adafruit_NeoPixel*) p)->getPixelColor(n); #
     RGB(
@@ -304,79 +297,36 @@ fun getPixelColor(n : uint16, strip : RawDevice) : color = {
     )
 }
 
-fun setBrightness(level : uint8, strip : RawDevice) : unit = {
-    let device(p) = strip
+fun setBrightness(level : uint8, line : RawDevice) : unit = {
+    let device(p) = line
     # ((Adafruit_NeoPixel*) p)->setBrightness(level); #
 }
 
-fun getBrightness(strip : RawDevice) : uint8 = {
+fun getBrightness(line : RawDevice) : uint8 = {
     let mut ret : uint8 = 0
-    let device(p) = strip
+    let device(p) = line
     # ret = ((Adafruit_NeoPixel*) p)->getBrightness(); #
     ret
 }
 
-fun begin(strip : RawDevice) : unit = {
-    let device(p) = strip
+fun begin(line : RawDevice) : unit = {
+    let device(p) = line
     # ((Adafruit_NeoPixel*) p)->begin(); #
 }
 
-fun show(strip : RawDevice) : unit = {
-    let device(p) = strip
+fun show(line : RawDevice) : unit = {
+    let device(p) = line
     # ((Adafruit_NeoPixel*) p)->show(); #
 }
 
-fun clear(strip : RawDevice) : unit = {
-    let device(p) = strip
+fun clear(line : RawDevice) : unit = {
+    let device(p) = line
     # ((Adafruit_NeoPixel*) p)->clear(); #
 }
 
-fun canShow(strip : RawDevice) : bool = {
-    let device(p) = strip
+fun canShow(line : RawDevice) : bool = {
+    let device(p) = line
     let mut ret = false
     # ret = ((Adafruit_NeoPixel*) p)->canShow(); #
     ret
 }
-
-// fun _update(inout model : Model<nStrips, nPixels>) = {
-//     Signal:constant(
-//         model.states
-//     ) |> Signal:map(
-//         (states) => {
-//             states |> List:map(
-//                 (state) => {
-//                     let mut state = state
-//                     match state.operation {
-//                         just(op) => {
-//                             let mut operation = op
-//                             Time:every(
-//                                 operation.interval,
-//                                 inout operation.timer
-//                             ) |> Signal:map(
-//                                 (_) => {
-//                                     just(operation)
-//                                 }
-//                             ) |> Signal:latch(
-//                                 inout state.operation
-//                             ) |> Signal:map(
-//                                 (_) => {
-//                                     applyOperation(
-//                                         operation,
-//                                         state.pixels
-//                                     )
-//                                 }
-//                             ) |> Signal:latch(
-//                                 inout state.pixels
-//                             ) |> Signal:toUnit(
-//                             )
-//                         }
-//                         nothing() => {
-//                             Signal:constant(())
-//                         }
-//                     }
-//                     state
-//                 }
-//             )
-//         }
-//     ) |> Signal:latch(inout model.states)
-// }
