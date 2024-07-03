@@ -3,9 +3,9 @@ module TEA
 open(NeoPixel)
 
 let mut state : Model<1, 150> = initialState(
-    array(
+    [
         { pin := 7 }
-    ), 
+    ], 
     150
 )
 
@@ -14,9 +14,7 @@ let mut previousAction : maybe<Action> = nothing()
 fun setup() = ()
 fun loop() = {
     Signal:foldP(
-        (action, state) => {
-            update(state)
-        },
+        update,
         inout state,
         actions(inout previousAction)
     )

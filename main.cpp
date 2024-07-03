@@ -1,4 +1,4 @@
-//Compiled on 7/3/2024 3:32:48 PM
+//Compiled on 7/3/2024 9:29:32 PM
 #include <inttypes.h>
 #include <stdbool.h>
 #include <new>
@@ -1560,18 +1560,22 @@ namespace NeoPixel {
 
 namespace NeoPixel {
     struct Function {
-        juniper::variant<int16_t, uint32_t> data;
+        juniper::variant<int16_t, NeoPixel::color, juniper::tuple2<NeoPixel::color, NeoPixel::color>> data;
 
         Function() {}
 
-        Function(juniper::variant<int16_t, uint32_t> initData) : data(initData) {}
+        Function(juniper::variant<int16_t, NeoPixel::color, juniper::tuple2<NeoPixel::color, NeoPixel::color>> initData) : data(initData) {}
 
         int16_t rotate() {
             return data.template get<0>();
         }
 
-        uint32_t set() {
+        NeoPixel::color set() {
             return data.template get<1>();
+        }
+
+        juniper::tuple2<NeoPixel::color, NeoPixel::color> alternate() {
+            return data.template get<2>();
         }
 
         uint8_t id() {
@@ -1588,39 +1592,37 @@ namespace NeoPixel {
     };
 
     NeoPixel::Function rotate(int16_t data0) {
-        return NeoPixel::Function(juniper::variant<int16_t, uint32_t>::template create<0>(data0));
+        return NeoPixel::Function(juniper::variant<int16_t, NeoPixel::color, juniper::tuple2<NeoPixel::color, NeoPixel::color>>::template create<0>(data0));
     }
 
-    NeoPixel::Function set(uint32_t data0) {
-        return NeoPixel::Function(juniper::variant<int16_t, uint32_t>::template create<1>(data0));
+    NeoPixel::Function set(NeoPixel::color data0) {
+        return NeoPixel::Function(juniper::variant<int16_t, NeoPixel::color, juniper::tuple2<NeoPixel::color, NeoPixel::color>>::template create<1>(data0));
     }
 
-
-}
-
-namespace NeoPixel {
-    using Operation = juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>;
+    NeoPixel::Function alternate(NeoPixel::color data0, NeoPixel::color data1) {
+        return NeoPixel::Function(juniper::variant<int16_t, NeoPixel::color, juniper::tuple2<NeoPixel::color, NeoPixel::color>>::template create<2>(juniper::tuple2<NeoPixel::color, NeoPixel::color>(data0, data1)));
+    }
 
 
 }
 
 namespace NeoPixel {
     struct Action {
-        juniper::variant<juniper::tuple2<NeoPixel::Function, uint32_t>, uint8_t, NeoPixel::color> data;
+        juniper::variant<NeoPixel::Function, juniper::tuple3<NeoPixel::Function, uint32_t, Prelude::maybe<uint8_t>>, uint8_t> data;
 
         Action() {}
 
-        Action(juniper::variant<juniper::tuple2<NeoPixel::Function, uint32_t>, uint8_t, NeoPixel::color> initData) : data(initData) {}
+        Action(juniper::variant<NeoPixel::Function, juniper::tuple3<NeoPixel::Function, uint32_t, Prelude::maybe<uint8_t>>, uint8_t> initData) : data(initData) {}
 
-        juniper::tuple2<NeoPixel::Function, uint32_t> start() {
+        NeoPixel::Function run() {
             return data.template get<0>();
         }
 
-        uint8_t end() {
+        juniper::tuple3<NeoPixel::Function, uint32_t, Prelude::maybe<uint8_t>> repeat() {
             return data.template get<1>();
         }
 
-        NeoPixel::color run() {
+        uint8_t endRepeat() {
             return data.template get<2>();
         }
 
@@ -1637,17 +1639,23 @@ namespace NeoPixel {
         }
     };
 
-    NeoPixel::Action start(NeoPixel::Function data0, uint32_t data1) {
-        return NeoPixel::Action(juniper::variant<juniper::tuple2<NeoPixel::Function, uint32_t>, uint8_t, NeoPixel::color>::template create<0>(juniper::tuple2<NeoPixel::Function, uint32_t>(data0, data1)));
+    NeoPixel::Action run(NeoPixel::Function data0) {
+        return NeoPixel::Action(juniper::variant<NeoPixel::Function, juniper::tuple3<NeoPixel::Function, uint32_t, Prelude::maybe<uint8_t>>, uint8_t>::template create<0>(data0));
     }
 
-    NeoPixel::Action end() {
-        return NeoPixel::Action(juniper::variant<juniper::tuple2<NeoPixel::Function, uint32_t>, uint8_t, NeoPixel::color>::template create<1>(0));
+    NeoPixel::Action repeat(NeoPixel::Function data0, uint32_t data1, Prelude::maybe<uint8_t> data2) {
+        return NeoPixel::Action(juniper::variant<NeoPixel::Function, juniper::tuple3<NeoPixel::Function, uint32_t, Prelude::maybe<uint8_t>>, uint8_t>::template create<1>(juniper::tuple3<NeoPixel::Function, uint32_t, Prelude::maybe<uint8_t>>(data0, data1, data2)));
     }
 
-    NeoPixel::Action run(NeoPixel::color data0) {
-        return NeoPixel::Action(juniper::variant<juniper::tuple2<NeoPixel::Function, uint32_t>, uint8_t, NeoPixel::color>::template create<2>(data0));
+    NeoPixel::Action endRepeat() {
+        return NeoPixel::Action(juniper::variant<NeoPixel::Function, juniper::tuple3<NeoPixel::Function, uint32_t, Prelude::maybe<uint8_t>>, uint8_t>::template create<2>(0));
     }
+
+
+}
+
+namespace NeoPixel {
+    using Operation = juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>;
 
 
 }
@@ -1662,6 +1670,40 @@ namespace NeoPixel {
 namespace NeoPixel {
     template<int nStrips, int nPixels>
     using Model = juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, nPixels>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, nPixels>, uint32_t>>, nStrips>, uint32_t>>;
+
+
+}
+
+namespace NeoPixel {
+    template<int nStrips, int nPixels>
+    struct Update {
+        juniper::variant<NeoPixel::Action> data;
+
+        Update() {}
+
+        Update(juniper::variant<NeoPixel::Action> initData) : data(initData) {}
+
+        NeoPixel::Action action() {
+            return data.template get<0>();
+        }
+
+        uint8_t id() {
+            return data.id();
+        }
+
+        bool operator==(Update rhs) {
+            return data == rhs.data;
+        }
+
+        bool operator!=(Update rhs) {
+            return !(this->operator==(rhs));
+        }
+    };
+
+    template<int nStrips, int nPixels>
+    NeoPixel::Update<nStrips, nPixels> action(NeoPixel::Action data0) {
+        return NeoPixel::Update<nStrips, nPixels>(juniper::variant<NeoPixel::Action>::template create<0>(data0));
+    }
 
 
 }
@@ -2887,7 +2929,7 @@ namespace ListExt {
 
 namespace SignalExit {
     template<typename t4117>
-    Prelude::sig<t4117> passthrough(Prelude::maybe<t4117>& state);
+    Prelude::sig<t4117> once(Prelude::maybe<t4117>& state);
 }
 
 namespace NeoPixel {
@@ -2918,8 +2960,8 @@ namespace NeoPixel {
 }
 
 namespace NeoPixel {
-    template<int c263>
-    juniper::records::recordt_0<juniper::array<Prelude::maybe<NeoPixel::color>, c263>, uint32_t> diffPixels(juniper::records::recordt_0<juniper::array<NeoPixel::color, c263>, uint32_t> current, juniper::records::recordt_0<juniper::array<NeoPixel::color, c263>, uint32_t> next);
+    template<int c265>
+    juniper::records::recordt_0<juniper::array<Prelude::maybe<NeoPixel::color>, c265>, uint32_t> diffPixels(juniper::records::recordt_0<juniper::array<NeoPixel::color, c265>, uint32_t> current, juniper::records::recordt_0<juniper::array<NeoPixel::color, c265>, uint32_t> next);
 }
 
 namespace NeoPixel {
@@ -2927,13 +2969,23 @@ namespace NeoPixel {
 }
 
 namespace NeoPixel {
-    template<int c266>
-    juniper::unit updatePixels(juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>> state);
+    template<int c268>
+    juniper::unit updatePixels(juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>> state);
 }
 
 namespace NeoPixel {
-    template<int c270, int c271>
-    juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>, c271>, uint32_t>> update(juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>, c271>, uint32_t>> model);
+    template<int c272>
+    juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>> updateOperation(juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>& state);
+}
+
+namespace NeoPixel {
+    template<int c275, int c276, int c278, int c279>
+    Prelude::sig<NeoPixel::Update<c278, c279>> __update(Prelude::maybe<NeoPixel::Action> act, juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c275>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c275>, uint32_t>>, c276>, uint32_t>>& model);
+}
+
+namespace NeoPixel {
+    template<int c306, int c307>
+    juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>, c307>, uint32_t>> update(NeoPixel::Action action, juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>, c307>, uint32_t>> model);
 }
 
 namespace NeoPixel {
@@ -8397,7 +8449,7 @@ namespace ListExt {
 
 namespace SignalExit {
     template<typename t4117>
-    Prelude::sig<t4117> passthrough(Prelude::maybe<t4117>& state) {
+    Prelude::sig<t4117> once(Prelude::maybe<t4117>& state) {
         return (([&]() -> Prelude::sig<t4117> {
             using t = t4117;
             return (([&]() -> Prelude::sig<t4117> {
@@ -8429,13 +8481,13 @@ namespace NeoPixel {
 }
 
 namespace NeoPixel {
-    Prelude::maybe<NeoPixel::Action> firstAction = just<NeoPixel::Action>(run(RGB(((uint8_t) 0), ((uint8_t) 0), ((uint8_t) 0))));
+    Prelude::maybe<NeoPixel::Action> firstAction = just<NeoPixel::Action>(run(set(RGB(((uint8_t) 0), ((uint8_t) 0), ((uint8_t) 255)))));
 }
 
 namespace NeoPixel {
     Prelude::sig<NeoPixel::Action> actions(Prelude::maybe<NeoPixel::Action>& prevAction) {
         return (([&]() -> Prelude::sig<NeoPixel::Action> {
-            return Signal::dropRepeats<NeoPixel::Action>(prevAction, Signal::constant<NeoPixel::Action>(start(rotate(((int16_t) 1)), ((uint32_t) 500))));
+            return Signal::dropRepeats<NeoPixel::Action>(prevAction, Signal::constant<NeoPixel::Action>(repeat(rotate(((int16_t) 1)), ((uint32_t) 500), just<uint8_t>(((uint8_t) 1)))));
         })());
     }
 }
@@ -8575,23 +8627,31 @@ namespace NeoPixel {
                     return (((bool) (((bool) ((guid250).id() == ((uint8_t) 0))) && true)) ? 
                         (([&]() -> juniper::records::recordt_0<juniper::array<NeoPixel::color, c260>, uint32_t> {
                             int16_t step = (guid250).rotate();
-                            return (([&]() -> juniper::records::recordt_0<juniper::array<NeoPixel::color, c260>, uint32_t> {
-                                return ListExt::rotated<NeoPixel::color, c260>(cast<int16_t, int32_t>(step), pixels);
-                            })());
+                            return ListExt::rotated<NeoPixel::color, c260>(cast<int16_t, int32_t>(step), pixels);
                         })())
                     :
                         (((bool) (((bool) ((guid250).id() == ((uint8_t) 1))) && true)) ? 
                             (([&]() -> juniper::records::recordt_0<juniper::array<NeoPixel::color, c260>, uint32_t> {
-                                uint32_t color = (guid250).set();
-                                return (([&]() -> juniper::records::recordt_0<juniper::array<NeoPixel::color, c260>, uint32_t> {
-                                    return List::map<NeoPixel::color, juniper::closures::closuret_7<uint32_t>, NeoPixel::color, c260>(juniper::function<juniper::closures::closuret_7<uint32_t>, NeoPixel::color(NeoPixel::color)>(juniper::closures::closuret_7<uint32_t>(color), [](juniper::closures::closuret_7<uint32_t>& junclosure, NeoPixel::color _) -> NeoPixel::color { 
-                                        uint32_t& color = junclosure.color;
-                                        return RGB(toUInt8<uint32_t>(((uint32_t) (color >> ((uint32_t) 16)))), toUInt8<uint32_t>(((uint32_t) (color >> ((uint32_t) 8)))), toUInt8<uint32_t>(color));
-                                     }), pixels);
-                                })());
+                                NeoPixel::color color = (guid250).set();
+                                return List::map<NeoPixel::color, juniper::closures::closuret_7<NeoPixel::color>, NeoPixel::color, c260>(juniper::function<juniper::closures::closuret_7<NeoPixel::color>, NeoPixel::color(NeoPixel::color)>(juniper::closures::closuret_7<NeoPixel::color>(color), [](juniper::closures::closuret_7<NeoPixel::color>& junclosure, NeoPixel::color _) -> NeoPixel::color { 
+                                    NeoPixel::color& color = junclosure.color;
+                                    return color;
+                                 }), pixels);
                             })())
                         :
-                            juniper::quit<juniper::records::recordt_0<juniper::array<NeoPixel::color, c260>, uint32_t>>()));
+                            (((bool) (((bool) ((guid250).id() == ((uint8_t) 2))) && true)) ? 
+                                (([&]() -> juniper::records::recordt_0<juniper::array<NeoPixel::color, c260>, uint32_t> {
+                                    NeoPixel::color c2 = ((guid250).alternate()).e2;
+                                    NeoPixel::color c1 = ((guid250).alternate()).e1;
+                                    return ListExt::replicateList<NeoPixel::color, c260, 2>(cast<int32_t, uint32_t>(nPixels), (([&]() -> juniper::records::recordt_0<juniper::array<NeoPixel::color, 2>, uint32_t>{
+                                        juniper::records::recordt_0<juniper::array<NeoPixel::color, 2>, uint32_t> guid251;
+                                        guid251.data = (juniper::array<NeoPixel::color, 2> { {c1, c2} });
+                                        guid251.length = ((uint32_t) 2);
+                                        return guid251;
+                                    })()));
+                                })())
+                            :
+                                juniper::quit<juniper::records::recordt_0<juniper::array<NeoPixel::color, c260>, uint32_t>>())));
                 })());
             })());
         })());
@@ -8599,26 +8659,26 @@ namespace NeoPixel {
 }
 
 namespace NeoPixel {
-    template<int c263>
-    juniper::records::recordt_0<juniper::array<Prelude::maybe<NeoPixel::color>, c263>, uint32_t> diffPixels(juniper::records::recordt_0<juniper::array<NeoPixel::color, c263>, uint32_t> current, juniper::records::recordt_0<juniper::array<NeoPixel::color, c263>, uint32_t> next) {
-        return (([&]() -> juniper::records::recordt_0<juniper::array<Prelude::maybe<NeoPixel::color>, c263>, uint32_t> {
-            constexpr int32_t nPixels = c263;
-            return (([&]() -> juniper::records::recordt_0<juniper::array<Prelude::maybe<NeoPixel::color>, c263>, uint32_t> {
-                return List::map<Prelude::maybe<NeoPixel::color>, void, juniper::tuple2<NeoPixel::color, NeoPixel::color>, c263>(juniper::function<void, Prelude::maybe<NeoPixel::color>(juniper::tuple2<NeoPixel::color, NeoPixel::color>)>([](juniper::tuple2<NeoPixel::color, NeoPixel::color> tup) -> Prelude::maybe<NeoPixel::color> { 
+    template<int c265>
+    juniper::records::recordt_0<juniper::array<Prelude::maybe<NeoPixel::color>, c265>, uint32_t> diffPixels(juniper::records::recordt_0<juniper::array<NeoPixel::color, c265>, uint32_t> current, juniper::records::recordt_0<juniper::array<NeoPixel::color, c265>, uint32_t> next) {
+        return (([&]() -> juniper::records::recordt_0<juniper::array<Prelude::maybe<NeoPixel::color>, c265>, uint32_t> {
+            constexpr int32_t nPixels = c265;
+            return (([&]() -> juniper::records::recordt_0<juniper::array<Prelude::maybe<NeoPixel::color>, c265>, uint32_t> {
+                return List::map<Prelude::maybe<NeoPixel::color>, void, juniper::tuple2<NeoPixel::color, NeoPixel::color>, c265>(juniper::function<void, Prelude::maybe<NeoPixel::color>(juniper::tuple2<NeoPixel::color, NeoPixel::color>)>([](juniper::tuple2<NeoPixel::color, NeoPixel::color> tup) -> Prelude::maybe<NeoPixel::color> { 
                     return (([&]() -> Prelude::maybe<NeoPixel::color> {
-                        juniper::tuple2<NeoPixel::color, NeoPixel::color> guid251 = tup;
+                        juniper::tuple2<NeoPixel::color, NeoPixel::color> guid252 = tup;
                         if (!(true)) {
                             juniper::quit<juniper::unit>();
                         }
-                        NeoPixel::color next = (guid251).e2;
-                        NeoPixel::color curr = (guid251).e1;
+                        NeoPixel::color next = (guid252).e2;
+                        NeoPixel::color curr = (guid252).e1;
                         
                         return (eq<NeoPixel::color>(curr, next) ? 
                             nothing<NeoPixel::color>()
                         :
                             just<NeoPixel::color>(next));
                     })());
-                 }), List::zip<NeoPixel::color, NeoPixel::color, c263>(current, next));
+                 }), List::zip<NeoPixel::color, NeoPixel::color, c265>(current, next));
             })());
         })());
     }
@@ -8627,19 +8687,19 @@ namespace NeoPixel {
 namespace NeoPixel {
     juniper::unit setPixelColor(uint16_t n, NeoPixel::color color, NeoPixel::RawDevice strip) {
         return (([&]() -> juniper::unit {
-            NeoPixel::RawDevice guid252 = strip;
-            if (!(((bool) (((bool) ((guid252).id() == ((uint8_t) 0))) && true)))) {
-                juniper::quit<juniper::unit>();
-            }
-            void * p = (guid252).device();
-            
-            NeoPixel::color guid253 = color;
+            NeoPixel::RawDevice guid253 = strip;
             if (!(((bool) (((bool) ((guid253).id() == ((uint8_t) 0))) && true)))) {
                 juniper::quit<juniper::unit>();
             }
-            uint8_t b = ((guid253).RGB()).e3;
-            uint8_t g = ((guid253).RGB()).e2;
-            uint8_t r = ((guid253).RGB()).e1;
+            void * p = (guid253).device();
+            
+            NeoPixel::color guid254 = color;
+            if (!(((bool) (((bool) ((guid254).id() == ((uint8_t) 0))) && true)))) {
+                juniper::quit<juniper::unit>();
+            }
+            uint8_t b = ((guid254).RGB()).e3;
+            uint8_t g = ((guid254).RGB()).e2;
+            uint8_t r = ((guid254).RGB()).e1;
             
             return (([&]() -> juniper::unit {
                  ((Adafruit_NeoPixel*) p)->setPixelColor(n, r, g, b); 
@@ -8650,30 +8710,30 @@ namespace NeoPixel {
 }
 
 namespace NeoPixel {
-    template<int c266>
-    juniper::unit updatePixels(juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>> state) {
+    template<int c268>
+    juniper::unit updatePixels(juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>> state) {
         return (([&]() -> juniper::unit {
-            constexpr int32_t n = c266;
+            constexpr int32_t n = c268;
             return (([&]() -> juniper::unit {
-                return List::iter<juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>>>, juniper::tuple2<uint32_t, Prelude::maybe<NeoPixel::color>>, c266>(juniper::function<juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>>>, juniper::unit(juniper::tuple2<uint32_t, Prelude::maybe<NeoPixel::color>>)>(juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>>>(state), [](juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>>>& junclosure, juniper::tuple2<uint32_t, Prelude::maybe<NeoPixel::color>> tup) -> juniper::unit { 
-                    juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c266>, uint32_t>>& state = junclosure.state;
+                return List::iter<juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>>>, juniper::tuple2<uint32_t, Prelude::maybe<NeoPixel::color>>, c268>(juniper::function<juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>>>, juniper::unit(juniper::tuple2<uint32_t, Prelude::maybe<NeoPixel::color>>)>(juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>>>(state), [](juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>>>& junclosure, juniper::tuple2<uint32_t, Prelude::maybe<NeoPixel::color>> tup) -> juniper::unit { 
+                    juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c268>, uint32_t>>& state = junclosure.state;
                     return (([&]() -> juniper::unit {
-                        juniper::tuple2<uint32_t, Prelude::maybe<NeoPixel::color>> guid254 = tup;
+                        juniper::tuple2<uint32_t, Prelude::maybe<NeoPixel::color>> guid255 = tup;
                         if (!(true)) {
                             juniper::quit<juniper::unit>();
                         }
-                        Prelude::maybe<NeoPixel::color> color = (guid254).e2;
-                        uint32_t index = (guid254).e1;
+                        Prelude::maybe<NeoPixel::color> color = (guid255).e2;
+                        uint32_t index = (guid255).e1;
                         
                         return (([&]() -> juniper::unit {
-                            Prelude::maybe<NeoPixel::color> guid255 = color;
-                            return (((bool) (((bool) ((guid255).id() == ((uint8_t) 0))) && true)) ? 
+                            Prelude::maybe<NeoPixel::color> guid256 = color;
+                            return (((bool) (((bool) ((guid256).id() == ((uint8_t) 0))) && true)) ? 
                                 (([&]() -> juniper::unit {
-                                    NeoPixel::color pixel = (guid255).just();
+                                    NeoPixel::color pixel = (guid256).just();
                                     return setPixelColor(cast<uint32_t, uint16_t>(index), pixel, (state).device);
                                 })())
                             :
-                                (((bool) (((bool) ((guid255).id() == ((uint8_t) 1))) && true)) ? 
+                                (((bool) (((bool) ((guid256).id() == ((uint8_t) 1))) && true)) ? 
                                     (([&]() -> juniper::unit {
                                         return juniper::unit();
                                     })())
@@ -8681,54 +8741,122 @@ namespace NeoPixel {
                                     juniper::quit<juniper::unit>()));
                         })());
                     })());
-                 }), ListExt::enumerated<Prelude::maybe<NeoPixel::color>, c266>(diffPixels<c266>((state).previousPixels, (state).pixels)));
+                 }), ListExt::enumerated<Prelude::maybe<NeoPixel::color>, c268>(diffPixels<c268>((state).previousPixels, (state).pixels)));
             })());
         })());
     }
 }
 
 namespace NeoPixel {
-    template<int c270, int c271>
-    juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>, c271>, uint32_t>> update(juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>, c271>, uint32_t>> model) {
-        return (([&]() -> juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>, c271>, uint32_t>> {
-            constexpr int32_t nPixels = c270;
-            constexpr int32_t nStrips = c271;
-            return (([&]() -> juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>, c271>, uint32_t>> {
-                juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>, c271>, uint32_t>> guid256 = model;
+    template<int c272>
+    juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>> updateOperation(juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>& state) {
+        return (([&]() -> juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>> {
+            constexpr int32_t nPixels = c272;
+            return (([&]() -> juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>> {
+                (([&]() -> Prelude::sig<juniper::unit> {
+                    Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>> guid257 = (state).operation;
+                    return (((bool) (((bool) ((guid257).id() == ((uint8_t) 0))) && true)) ? 
+                        (([&]() -> Prelude::sig<juniper::unit> {
+                            juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>> op = (guid257).just();
+                            return (([&]() -> Prelude::sig<juniper::unit> {
+                                juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>> guid258 = op;
+                                if (!(true)) {
+                                    juniper::quit<juniper::unit>();
+                                }
+                                juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>> operation = guid258;
+                                
+                                return Signal::toUnit<juniper::unit>(Signal::map<juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>>, juniper::unit>(juniper::function<juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>>, juniper::unit(juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>)>(juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>>(state), [](juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>>& junclosure, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t> _) -> juniper::unit { 
+                                    juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>& state = junclosure.state;
+                                    return updatePixels<c272>(state);
+                                 }), Signal::latch<juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>((state).pixels, Signal::map<juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::closures::closuret_9<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>(juniper::function<juniper::closures::closuret_9<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>(juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>)>(juniper::closures::closuret_9<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>>(operation, state), [](juniper::closures::closuret_9<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>>& junclosure, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t> _) -> juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t> { 
+                                    juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>& operation = junclosure.operation;
+                                    juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>& state = junclosure.state;
+                                    return applyOperation<c272>(operation, (state).previousPixels);
+                                 }), Signal::latch<juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>((state).previousPixels, Signal::map<Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>(juniper::function<juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>(Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>)>(juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>>(state), [](juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>>& junclosure, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>> _) -> juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t> { 
+                                    juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c272>, uint32_t>>& state = junclosure.state;
+                                    return (state).pixels;
+                                 }), Signal::latch<Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>>((state).operation, Signal::map<uint32_t, juniper::closures::closuret_10<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>>(juniper::function<juniper::closures::closuret_10<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>(uint32_t)>(juniper::closures::closuret_10<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>(operation), [](juniper::closures::closuret_10<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>& junclosure, uint32_t _) -> Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>> { 
+                                    juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>& operation = junclosure.operation;
+                                    return just<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>(operation);
+                                 }), Time::every((operation).interval, (operation).timer)))))))));
+                            })());
+                        })())
+                    :
+                        (((bool) (((bool) ((guid257).id() == ((uint8_t) 1))) && true)) ? 
+                            (([&]() -> Prelude::sig<juniper::unit> {
+                                return (([&]() -> Prelude::sig<juniper::unit> {
+                                    return Signal::constant<juniper::unit>(juniper::unit());
+                                })());
+                            })())
+                        :
+                            juniper::quit<Prelude::sig<juniper::unit>>()));
+                })());
+                return state;
+            })());
+        })());
+    }
+}
+
+namespace NeoPixel {
+    template<int c275, int c276, int c278, int c279>
+    Prelude::sig<NeoPixel::Update<c278, c279>> __update(Prelude::maybe<NeoPixel::Action> act, juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c275>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c275>, uint32_t>>, c276>, uint32_t>>& model) {
+        return (([&]() -> Prelude::sig<NeoPixel::Update<c278, c279>> {
+            constexpr int32_t nPixels = c275;
+            constexpr int32_t nStrips = c276;
+            return (([&]() -> Prelude::sig<NeoPixel::Update<c278, c279>> {
+                return Signal::mergeMany<NeoPixel::Update<c278, c279>, 1>((([&]() -> juniper::records::recordt_0<juniper::array<Prelude::sig<NeoPixel::Update<c278, c279>>, 1>, uint32_t>{
+                    juniper::records::recordt_0<juniper::array<Prelude::sig<NeoPixel::Update<c278, c279>>, 1>, uint32_t> guid259;
+                    guid259.data = (juniper::array<Prelude::sig<NeoPixel::Update<c278, c279>>, 1> { {Signal::map<NeoPixel::Action, void, NeoPixel::Update<c278, c279>>(juniper::function<void, NeoPixel::Update<c278, c279>(NeoPixel::Action)>(action<c278, c279>), signal<NeoPixel::Action>(act))} });
+                    guid259.length = ((uint32_t) 1);
+                    return guid259;
+                })()));
+            })());
+        })());
+    }
+}
+
+namespace NeoPixel {
+    template<int c306, int c307>
+    juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>, c307>, uint32_t>> update(NeoPixel::Action action, juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>, c307>, uint32_t>> model) {
+        return (([&]() -> juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>, c307>, uint32_t>> {
+            constexpr int32_t nPixels = c306;
+            constexpr int32_t nStrips = c307;
+            return (([&]() -> juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>, c307>, uint32_t>> {
+                juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>, c307>, uint32_t>> guid260 = model;
                 if (!(true)) {
                     juniper::quit<juniper::unit>();
                 }
-                juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>, c271>, uint32_t>> model = guid256;
+                juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>, c307>, uint32_t>> model = guid260;
                 
-                ((model).states = List::map<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>, void, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>, c271>(juniper::function<void, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>(juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>)>([](juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>> state) -> juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>> { 
-                    return (([&]() -> juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>> {
-                        juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>> guid257 = state;
+                ((model).states = List::map<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>, void, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>, c307>(juniper::function<void, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>(juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>)>([](juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>> state) -> juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>> { 
+                    return (([&]() -> juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>> {
+                        juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>> guid261 = state;
                         if (!(true)) {
                             juniper::quit<juniper::unit>();
                         }
-                        juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>> state = guid257;
+                        juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>> state = guid261;
                         
                         (([&]() -> Prelude::sig<juniper::unit> {
-                            Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>> guid258 = (state).operation;
-                            return (((bool) (((bool) ((guid258).id() == ((uint8_t) 0))) && true)) ? 
+                            Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>> guid262 = (state).operation;
+                            return (((bool) (((bool) ((guid262).id() == ((uint8_t) 0))) && true)) ? 
                                 (([&]() -> Prelude::sig<juniper::unit> {
-                                    juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>> op = (guid258).just();
+                                    juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>> op = (guid262).just();
                                     return (([&]() -> Prelude::sig<juniper::unit> {
-                                        juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>> guid259 = op;
+                                        juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>> guid263 = op;
                                         if (!(true)) {
                                             juniper::quit<juniper::unit>();
                                         }
-                                        juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>> operation = guid259;
+                                        juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>> operation = guid263;
                                         
-                                        return Signal::toUnit<juniper::unit>(Signal::map<juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>>, juniper::unit>(juniper::function<juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>>, juniper::unit(juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>)>(juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>>(state), [](juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>>& junclosure, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t> _) -> juniper::unit { 
-                                            juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>& state = junclosure.state;
-                                            return updatePixels<c270>(state);
-                                         }), Signal::latch<juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>((state).pixels, Signal::map<juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::closures::closuret_9<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>(juniper::function<juniper::closures::closuret_9<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>(juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>)>(juniper::closures::closuret_9<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>>(operation, state), [](juniper::closures::closuret_9<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>>& junclosure, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t> _) -> juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t> { 
+                                        return Signal::toUnit<juniper::unit>(Signal::map<juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>>, juniper::unit>(juniper::function<juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>>, juniper::unit(juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>)>(juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>>(state), [](juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>>& junclosure, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t> _) -> juniper::unit { 
+                                            juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>& state = junclosure.state;
+                                            return updatePixels<c306>(state);
+                                         }), Signal::latch<juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>((state).pixels, Signal::map<juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::closures::closuret_9<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>(juniper::function<juniper::closures::closuret_9<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>(juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>)>(juniper::closures::closuret_9<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>>(operation, state), [](juniper::closures::closuret_9<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>, juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>>& junclosure, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t> _) -> juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t> { 
                                             juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>& operation = junclosure.operation;
-                                            juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>& state = junclosure.state;
-                                            return applyOperation<c270>(operation, (state).previousPixels);
-                                         }), Signal::latch<juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>((state).previousPixels, Signal::map<Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>(juniper::function<juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>(Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>)>(juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>>(state), [](juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>>& junclosure, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>> _) -> juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t> { 
-                                            juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c270>, uint32_t>>& state = junclosure.state;
+                                            juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>& state = junclosure.state;
+                                            return applyOperation<c306>(operation, (state).previousPixels);
+                                         }), Signal::latch<juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>((state).previousPixels, Signal::map<Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>(juniper::function<juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>(Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>)>(juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>>(state), [](juniper::closures::closuret_8<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>>& junclosure, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>> _) -> juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t> { 
+                                            juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, c306>, uint32_t>>& state = junclosure.state;
                                             return (state).pixels;
                                          }), Signal::latch<Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>>((state).operation, Signal::map<uint32_t, juniper::closures::closuret_10<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>>(juniper::function<juniper::closures::closuret_10<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>(uint32_t)>(juniper::closures::closuret_10<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>(operation), [](juniper::closures::closuret_10<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>& junclosure, uint32_t _) -> Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>> { 
                                             juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>& operation = junclosure.operation;
@@ -8737,7 +8865,7 @@ namespace NeoPixel {
                                     })());
                                 })())
                             :
-                                (((bool) (((bool) ((guid258).id() == ((uint8_t) 1))) && true)) ? 
+                                (((bool) (((bool) ((guid262).id() == ((uint8_t) 1))) && true)) ? 
                                     (([&]() -> Prelude::sig<juniper::unit> {
                                         return (([&]() -> Prelude::sig<juniper::unit> {
                                             return Signal::constant<juniper::unit>(juniper::unit());
@@ -8758,11 +8886,11 @@ namespace NeoPixel {
 namespace NeoPixel {
     juniper::unit setBrightness(uint8_t level, NeoPixel::RawDevice strip) {
         return (([&]() -> juniper::unit {
-            NeoPixel::RawDevice guid260 = strip;
-            if (!(((bool) (((bool) ((guid260).id() == ((uint8_t) 0))) && true)))) {
+            NeoPixel::RawDevice guid264 = strip;
+            if (!(((bool) (((bool) ((guid264).id() == ((uint8_t) 0))) && true)))) {
                 juniper::quit<juniper::unit>();
             }
-            void * p = (guid260).device();
+            void * p = (guid264).device();
             
             return (([&]() -> juniper::unit {
                  ((Adafruit_NeoPixel*) p)->setBrightness(level); 
@@ -8775,17 +8903,17 @@ namespace NeoPixel {
 namespace NeoPixel {
     uint8_t getBrightness(NeoPixel::RawDevice strip) {
         return (([&]() -> uint8_t {
-            uint8_t guid261 = ((uint8_t) 0);
+            uint8_t guid265 = ((uint8_t) 0);
             if (!(true)) {
                 juniper::quit<juniper::unit>();
             }
-            uint8_t ret = guid261;
+            uint8_t ret = guid265;
             
-            NeoPixel::RawDevice guid262 = strip;
-            if (!(((bool) (((bool) ((guid262).id() == ((uint8_t) 0))) && true)))) {
+            NeoPixel::RawDevice guid266 = strip;
+            if (!(((bool) (((bool) ((guid266).id() == ((uint8_t) 0))) && true)))) {
                 juniper::quit<juniper::unit>();
             }
-            void * p = (guid262).device();
+            void * p = (guid266).device();
             
             (([&]() -> juniper::unit {
                  ret = ((Adafruit_NeoPixel*) p)->getBrightness(); 
@@ -8799,11 +8927,11 @@ namespace NeoPixel {
 namespace NeoPixel {
     juniper::unit begin(NeoPixel::RawDevice strip) {
         return (([&]() -> juniper::unit {
-            NeoPixel::RawDevice guid263 = strip;
-            if (!(((bool) (((bool) ((guid263).id() == ((uint8_t) 0))) && true)))) {
+            NeoPixel::RawDevice guid267 = strip;
+            if (!(((bool) (((bool) ((guid267).id() == ((uint8_t) 0))) && true)))) {
                 juniper::quit<juniper::unit>();
             }
-            void * p = (guid263).device();
+            void * p = (guid267).device();
             
             return (([&]() -> juniper::unit {
                  ((Adafruit_NeoPixel*) p)->begin(); 
@@ -8816,11 +8944,11 @@ namespace NeoPixel {
 namespace NeoPixel {
     juniper::unit show(NeoPixel::RawDevice strip) {
         return (([&]() -> juniper::unit {
-            NeoPixel::RawDevice guid264 = strip;
-            if (!(((bool) (((bool) ((guid264).id() == ((uint8_t) 0))) && true)))) {
+            NeoPixel::RawDevice guid268 = strip;
+            if (!(((bool) (((bool) ((guid268).id() == ((uint8_t) 0))) && true)))) {
                 juniper::quit<juniper::unit>();
             }
-            void * p = (guid264).device();
+            void * p = (guid268).device();
             
             return (([&]() -> juniper::unit {
                  ((Adafruit_NeoPixel*) p)->show(); 
@@ -8833,11 +8961,11 @@ namespace NeoPixel {
 namespace NeoPixel {
     juniper::unit clear(NeoPixel::RawDevice strip) {
         return (([&]() -> juniper::unit {
-            NeoPixel::RawDevice guid265 = strip;
-            if (!(((bool) (((bool) ((guid265).id() == ((uint8_t) 0))) && true)))) {
+            NeoPixel::RawDevice guid269 = strip;
+            if (!(((bool) (((bool) ((guid269).id() == ((uint8_t) 0))) && true)))) {
                 juniper::quit<juniper::unit>();
             }
-            void * p = (guid265).device();
+            void * p = (guid269).device();
             
             return (([&]() -> juniper::unit {
                  ((Adafruit_NeoPixel*) p)->clear(); 
@@ -8850,17 +8978,17 @@ namespace NeoPixel {
 namespace NeoPixel {
     bool canShow(NeoPixel::RawDevice strip) {
         return (([&]() -> bool {
-            NeoPixel::RawDevice guid266 = strip;
-            if (!(((bool) (((bool) ((guid266).id() == ((uint8_t) 0))) && true)))) {
+            NeoPixel::RawDevice guid270 = strip;
+            if (!(((bool) (((bool) ((guid270).id() == ((uint8_t) 0))) && true)))) {
                 juniper::quit<juniper::unit>();
             }
-            void * p = (guid266).device();
+            void * p = (guid270).device();
             
-            bool guid267 = false;
+            bool guid271 = false;
             if (!(true)) {
                 juniper::quit<juniper::unit>();
             }
-            bool ret = guid267;
+            bool ret = guid271;
             
             (([&]() -> juniper::unit {
                  ret = ((Adafruit_NeoPixel*) p)->canShow(); 
@@ -8872,11 +9000,11 @@ namespace NeoPixel {
 }
 
 namespace TEA {
-    juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>> state = initialState<150, 1>(array<juniper::records::recordt_7<uint16_t>, 1>((([]() -> juniper::records::recordt_7<uint16_t>{
-        juniper::records::recordt_7<uint16_t> guid268;
-        guid268.pin = ((uint16_t) 7);
-        return guid268;
-    })())), ((uint16_t) 150));
+    juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>> state = initialState<150, 1>((juniper::array<juniper::records::recordt_7<uint16_t>, 1> { {(([]() -> juniper::records::recordt_7<uint16_t>{
+        juniper::records::recordt_7<uint16_t> guid272;
+        guid272.pin = ((uint16_t) 7);
+        return guid272;
+    })())} }), ((uint16_t) 150));
 }
 
 namespace TEA {
@@ -8892,11 +9020,7 @@ namespace TEA {
 namespace TEA {
     Prelude::sig<juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>>> loop() {
         return (([&]() -> Prelude::sig<juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>>> {
-            return Signal::foldP<NeoPixel::Action, void, juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>>>(juniper::function<void, juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>>(NeoPixel::Action,juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>>)>([](NeoPixel::Action action, juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>> state) -> juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>> { 
-                return (([&]() -> juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>> {
-                    return update<150, 1>(state);
-                })());
-             }), state, actions(previousAction));
+            return Signal::foldP<NeoPixel::Action, void, juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>>>(juniper::function<void, juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>>(NeoPixel::Action, juniper::records::recordt_10<juniper::records::recordt_0<juniper::array<juniper::records::recordt_9<NeoPixel::RawDevice, Prelude::maybe<juniper::records::recordt_8<NeoPixel::Function, uint32_t, juniper::records::recordt_1<uint32_t>>>, uint16_t, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>, juniper::records::recordt_0<juniper::array<NeoPixel::color, 150>, uint32_t>>, 1>, uint32_t>>)>(update<150, 1>), state, actions(previousAction));
         })());
     }
 }

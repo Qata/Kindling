@@ -1,7 +1,7 @@
 module SignalExit
 open(Signal)
 
-fun passthrough(inout state : maybe<t>) : sig<t> = {
+fun once(inout state : maybe<t>) : sig<t> = {
     match state {
         just(value) => {
             state = nothing()
