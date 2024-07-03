@@ -1,6 +1,6 @@
 module NeoPixel
 include("<Adafruit_NeoPixel.h>")
-open(Io, Color, Time)
+open(Io, Time)
 
 // The ptr here should be a Adafruit_NeoPixel object
 type RawDevice = device(ptr)
@@ -8,6 +8,8 @@ type RawDevice = device(ptr)
 alias DeviceDescriptor = {
     pin : uint16
 }
+
+type color = RGB(uint8, uint8, uint8)
 
 type Function =
     rotate(int16)
@@ -19,9 +21,37 @@ alias Operation = {
     timer : timerState
 }
 
+type Action =
+start(Function, uint32)
+| end()
+| run(color)
+
+let mut actionsTimerState = Time:state
+let mut firstAction : maybe<Action> = just(
+    run(
+        RGB(0, 0, 0)
+    )
+)
+fun actions(inout prevAction : maybe<Action>): sig<Action> = {
+    // Signal:mergeMany(
+    //     {
+    //         array(
+    //             firstAction,
+    //             secondAction
+    //         )
+    //     }
+    // )
+    Signal:constant(
+        start(
+            rotate(1),
+            500
+        )
+    ) |> Signal:dropRepeats(inout prevAction)
+}
+
 alias PixelState<nPixels : int> = {
-    previousPixels : list<rgb, nPixels>,
-    pixels : list<rgb, nPixels>,
+    previousPixels : list<color, nPixels>,
+    pixels : list<color, nPixels>,
     operation : maybe<Operation>,
     pin : uint16,
     device : RawDevice
@@ -48,12 +78,16 @@ fun initialState(descriptors : DeviceDescriptor[nStrips], nPixels : uint16) : Mo
     }
 }
 
-fun readPixels(device : RawDevice): list<rgb, n> = {
+fun readPixels(device : RawDevice): list<color, n> = {
     let mut color = 0u32
-    let mut pixels: rgb[n] = zeros()
+    let mut pixels: color[n] = zeros()
     for i in 0u16 .. cast(n) {
         getPixelColor(i, device)
-        pixels[i] = { r := toUInt8(color >> 16u32), g := toUInt8(color >> 8u32), b := toUInt8(color) }
+        pixels[i] = RGB(
+            toUInt8(color >> 16u32), 
+            toUInt8(color >> 8u32), 
+            toUInt8(color)
+        )
     }
     { data := pixels, length := cast(n) }
 }
@@ -64,7 +98,8 @@ fun makeDevice(pin : uint16, pixels : uint16) : RawDevice = {
     NeoPixel:device(ret)
 }
 
-fun update(inout model : Model<nStrips, nPixels>) = {
+fun update(model : Model<nStrips, nPixels>) : Model<nStrips, nPixels> = {
+    let mut model = model
     model.states = model.states |> List:map(
         (state) => {
             let mut state = state
@@ -103,30 +138,26 @@ fun update(inout model : Model<nStrips, nPixels>) = {
             state
         }
     )
+    model
 }
 
 fun applyOperation(
     operation : Operation, 
-    pixels : list<rgb, nPixels>
-) : list<rgb, nPixels> = {
+    pixels : list<color, nPixels>
+) : list<color, nPixels> = {
     match operation.function {
         rotate(step) => {
             ListExt:rotated(cast(step), pixels)
         }
         set(color) => {
-            // workaround for a compiler bug
-            let mut ret : list<rgb, nPixels> = { data := zeros(), length := cast(nPixels) }
-            for i in 0 .. nPixels {
-                ret.data[i].r = toUInt8(color >> 16u32)
-                ret.data[i].g = toUInt8(color >> 8u32)
-                ret.data[i].b = toUInt8(color)
-            }
-            ret
+            pixels |> List:map(
+                (_) => RGB(toUInt8(color >> 16u32), toUInt8(color >> 8u32), toUInt8(color))
+            )
         }
     }
 }
 
-fun diffPixels(current : list<rgb, nPixels>, next : list<rgb, nPixels>) : list<maybe<rgb>, nPixels> = {
+fun diffPixels(current : list<color, nPixels>, next : list<color, nPixels>) : list<maybe<color>, nPixels> = {
     List:zip(
        current,
        next
@@ -148,8 +179,8 @@ fun updatePixels(state : PixelState<n>) = {
     ) |> ListExt:enumerated(
     ) |> List:iter(
         (tup) => {
-            let (index, rgb) = tup
-            match rgb {
+            let (index, color) = tup
+            match color {
                 just(pixel) => setPixelColor(cast(index), pixel, state.device)
                 nothing() => ()
             }
@@ -157,19 +188,21 @@ fun updatePixels(state : PixelState<n>) = {
     )
 }
 
-fun setPixelColor(n : uint16, color : rgb, strip : RawDevice) : unit = {
+fun setPixelColor(n : uint16, color : color, strip : RawDevice) : unit = {
     let device(p) = strip
-    let r = color.r
-    let g = color.g
-    let b = color.b
+    let RGB(r, g, b) = color
     # ((Adafruit_NeoPixel*) p)->setPixelColor(n, r, g, b); #
 }
 
-fun getPixelColor(n : uint16, strip : RawDevice) : rgb = {
+fun getPixelColor(n : uint16, strip : RawDevice) : color = {
     let device(p) = strip
     let mut numRep : uint32 = 0
     # numRep = ((Adafruit_NeoPixel*) p)->getPixelColor(n); #
-    { r := toUInt8(numRep >> 16u32), g := toUInt8(numRep >> 8u32), b := toUInt8(numRep) }
+    RGB(
+        toUInt8(numRep >> 16u32), 
+        toUInt8(numRep >> 8u32), 
+        toUInt8(numRep)
+    )
 }
 
 fun setBrightness(level : uint8, strip : RawDevice) : unit = {

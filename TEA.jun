@@ -1,38 +1,23 @@
 module TEA
 
-// let mut state : Model<1, 150> = initialState(
-//     { pin := 7 }, 
-//     150
-// )
+open(NeoPixel)
 
-type Action = begin(NeoPixel:Operation) | end()
+let mut state : Model<1, 150> = initialState(
+    array(
+        { pin := 7 }
+    ), 
+    150
+)
 
-// fun actions(): sig<Action> = {
-//     Signal:constant(begin(NeoPixel:set(Color:red)))
-//     Signal:merge(
-//         Time:every(1000, inout tState1) |> Signal:map(
-//             (_) => {
-//                 increment()
-//             }
-//         ),
-//         Time:every(2000, inout tState2) |> Signal:map(
-//             (_) => {
-//                 decrement()
-//             }
-//         )
-//     )
-// }
+let mut previousAction : maybe<Action> = nothing()
 
 fun setup() = ()
 fun loop() = {
-    // Signal:foldP(
-    //     NeoPixel:update,
-    //     inout state,
-    //     actions()
-    // ) |> Signal:map(
-    //     (state) => {
-    //         Io:printInt(state.counter)
-    //     }
-    // )
-    ()
+    Signal:foldP(
+        (action, state) => {
+            update(state)
+        },
+        inout state,
+        actions(inout previousAction)
+    )
 }
