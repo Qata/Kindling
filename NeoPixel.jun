@@ -54,14 +54,14 @@ let mut firstAction : maybe<Action> = just(
 
 fun actions(
     inout prevAction : maybe<Action>
-) : sig<Action> = {
+) : sig<maybe<Action>> = {
     Signal:constant(
         repeat(
             rotate(1),
             500,
             just(1)
         )
-    ) |> Signal:dropRepeats(inout prevAction)
+    ) |> Signal:dropRepeats(inout prevAction) |> Signal:meta()
 }
 
 fun initialState(descriptors : DeviceDescriptor[nStrips], nPixels : uint16) : Model<nStrips, m> = {
@@ -108,7 +108,8 @@ fun makeDevice(pin : uint16, pixels : uint16) : RawDevice = {
 //     }
 // }
 
-fun updateOperation(inout state : PixelState<nPixels>) = {
+fun updateOperation(state : PixelState<nPixels>) : PixelState<nPixels> = {
+    let mut state = state
     match state.operation {
         just(op) => {
             let mut operation = op
@@ -144,37 +145,42 @@ fun updateOperation(inout state : PixelState<nPixels>) = {
     state
 }
 
-// alias OperationUpdate = {
-//     operation : Operation,
-//     pixels : PixelState<nPixels>
-// }
-
-type Update<nStrips : int, nPixels : int> = 
+type Update = 
     action(Action)
-    | operations(list<maybe<(Operation, PixelState<nPixels>)>, nStrips>)
+    | operation()
 
-fun __update(act : maybe<Action>, inout model : Model<nStrips, nPixels>) = {
+fun __update(act : maybe<Action>, model : Model<nStrips, nPixels>) : Model<nStrips, nPixels> = {
+    let mut model = model
     Signal:mergeMany(
         {
             data := [
-                signal(act) |> Signal:map(action)
-                // Signal:constant(
-                //     model.states |> List:map(
-                //         (state) => {
-                //             state.operation |> Maybe:map(
-                //                 (operation) => {
-                //                     (operation, state)
-                //                 }
-                //             )
-                //         }
-                //     )
-                // ) |> Signal:map(
-                //     operations
-                // )
+                signal(act) |> Signal:map(action),
+                Signal:constant(operation())
             ],
-            length := 1
+            length := 2
+        }
+    ) |> Signal:map(
+        (update) => {
+            match update {
+                action(action) => {
+                    ()
+                }
+                operation() => {
+                    model.states |> List:map(
+                        (state) => {
+                            state.operation |> Maybe:map(
+                                (operation) => {
+                                    ()
+                                }
+                            )
+                        }
+                    )
+                    ()
+                }
+            }
         }
     )
+    model
     // {
     //     states := {
     //         model.states |> List:map(

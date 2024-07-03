@@ -14,7 +14,7 @@ let mut previousAction : maybe<Action> = nothing()
 fun setup() = ()
 fun loop() = {
     Signal:foldP(
-        update,
+        __update,
         inout state,
         actions(inout previousAction)
     )
