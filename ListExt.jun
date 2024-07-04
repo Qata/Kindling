@@ -1,21 +1,21 @@
 module ListExt
 
-fun range(lowerBound : from, upperBound : upTo): list<int32, upTo - from> = {
-    let length: int32 = cast(upTo - from)
-    let mut result: a[length] = zeros()
+// fun range(lowerBound : from, upperBound : upTo): list<int32, upTo - from> = {
+//     let length: int32 = cast(upTo - from)
+//     let mut result: a[length] = zeros()
 
-    for i : int32 in 0i32 .. length {
-        result[i] = Math:mapRange(
-            i |> toFloat(),
-            from |> toFloat(),
-            upTo |> toFloat(),
-            0.0,
-            length |> toFloat()
-        ) |> toInt32()
-    }
+//     for i : int32 in 0i32 .. length {
+//         result[i] = Math:mapRange(
+//             i |> toFloat(),
+//             from |> toFloat(),
+//             upTo |> toFloat(),
+//             0.0,
+//             length |> toFloat()
+//         ) |> toInt32()
+//     }
 
-    { data := result, length := cast(length) }
-}
+//     { data := result, length := cast(length) }
+// }
 
 fun enumerated(lst : list<a, n>) : list<(uint32, a), n> = {
     let mut offset = 0u32

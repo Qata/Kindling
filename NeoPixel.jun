@@ -17,14 +17,15 @@ rotate(int16)
 | alternate(color, color)
 
 type Action =
-    run(Function)
-    | repeat(Function, uint32, maybe<uint8>)
-    | endRepeat()
+    run(uint8, Function)
+    | repeat(uint8, Function, uint32, maybe<uint8>)
+    | endRepeat(uint8)
 
 alias Operation = {
     function : Function,
     interval : uint32,
-    timer : timerState
+    timer : timerState,
+    endAfter : maybe<uint8>
 }
 
 alias Line<nPixels : int> = {
@@ -39,9 +40,9 @@ alias Model<nLines : int, nPixels : int> = {
     lines : list<Line<nPixels>, nLines>
 }
 
-let mut actionsTimerState = Time:state
 let mut firstAction : maybe<Action> = just(
     run(
+        1,
         set(
             RGB(
                 0,
@@ -55,14 +56,21 @@ let mut firstAction : maybe<Action> = just(
 fun actions(
     inout prevAction : maybe<Action>
 ) : sig<maybe<Action>> = {
-    Signal:constant(
-        repeat(
-            rotate(1),
-            500,
-            just(1)
-        )
-    ) |> Signal:dropRepeats(
-        inout prevAction
+    Signal:mergeMany(
+        {
+            data := [
+                SignalExt:once(inout firstAction),
+                Signal:constant(
+                    repeat(
+                        0,
+                        rotate(1),
+                        500,
+                        nothing()
+                    )
+                )
+            ],
+            length := 2
+        }
     ) |> Signal:meta(
     )
 }
@@ -72,9 +80,10 @@ fun initialState(descriptors : DeviceDescriptor[nLines], nPixels : uint16) : Mod
         lines := { data := descriptors, length := cast(nLines) } |> List:map(
             (descriptor) => {
                 let device = makeDevice(descriptor.pin, cast(nPixels))
+                let pixels : list<color, nPixels> = { data := zeros(), length := cast(nPixels) }
                 {
                     previousPixels := readPixels(device),
-                    pixels := { data := zeros(), length := cast(nPixels) },
+                    pixels := pixels,
                     operation := nothing(),
                     pin := descriptor.pin,
                     device := device
@@ -100,7 +109,7 @@ fun readPixels(device : RawDevice): list<color, n> = {
 
 fun makeDevice(pin : uint16, pixels : uint16) : RawDevice = {
     var ret : ptr
-    #ret = Adafruit_NeoPixel(pixels, pin, NEO_GRB + NEO_KHZ800);#
+    #ret = new Adafruit_NeoPixel(pixels, pin, NEO_GRB + NEO_KHZ800);#
     NeoPixel:device(ret)
 }
 
@@ -111,50 +120,71 @@ fun makeDevice(pin : uint16, pixels : uint16) : RawDevice = {
 //     }
 // }
 
-fun updateOperation(state : Line<nPixels>) : Line<nPixels> = {
-    let mut state = state
-    match state.operation {
-        just(op) => {
-            let mut operation = op
-            Time:every(
-                operation.interval,
-                inout operation.timer
-            ) |> Signal:map(
-                (_) => {
-                    just(operation)
+fun runOperation(operation : Operation, line : Line<nPixels>) : Line<nPixels> = {
+    let mut operation = operation
+    let mut line = line
+    Time:every(
+        operation.interval,
+        inout operation.timer
+    ) |> Signal:map(
+        (_) => {
+            just(operation)
+        }
+    ) |> Signal:latch(
+        inout line.operation
+    ) |> Signal:map(
+        (_) => {
+            updateLine(line, operation.function)
+        }
+    ) |> Signal:latch(
+        inout line
+    )
+    line
+}
+
+fun updateOperation(line : Line<nPixels>) : Line<nPixels> = {
+    let mut line = line
+    match line.operation {
+        just(operation) => {
+            let mut operation = operation
+            line = match operation.endAfter {
+                just(0) => {
+                    line.operation = nothing()
+                    line
                 }
-            ) |> Signal:latch(
-                inout state.operation
-            ) |> Signal:map(
-                (_) => state.pixels
-            ) |> Signal:latch(
-                inout state.previousPixels
-            ) |> Signal:map(
-                (_) => applyOperation(
-                    operation,
-                    state.previousPixels
-                )
-            ) |> Signal:latch(
-                inout state.pixels
-            ) |> Signal:map(
-                (_) => updatePixels(
-                    state
-                )
-            ) |> Signal:toUnit(
-            )
+                just(n) => {
+                    operation.endAfter = just(n - 1)
+                    runOperation(operation, line)
+                }
+                nothing() => {
+                    runOperation(operation, line)
+                }
+            }
+            ()
         }
         nothing() => {
-            Signal:constant(())
+            ()
         }
     }
-    state
+    line
+}
+
+fun updateLine(line : Line<nPixels>, fn : Function) : Line<nPixels> = {
+    let mut line = line
+    line.previousPixels = line.pixels
+    line.pixels = applyFunction(
+        fn,
+        line.previousPixels
+    )
+    updatePixels(line)
+    line
 }
 
 type Update = 
     action(Action)
     | operation()
 
-fun __update(act : maybe<Action>, model : Model<nLines, nPixels>) : Model<nLines, nPixels> = {
+fun update(act : maybe<Action>, model : Model<nLines, nPixels>) : Model<nLines, nPixels> = {
     let mut model = model
     Signal:mergeMany(
         {
@@ -168,72 +198,55 @@ fun __update(act : maybe<Action>, model : Model<nLines, nPixels>) : Model<nLines
         (update) => {
             match update {
                 action(action) => {
+                    let mut lines = model.lines
                     match action {
-                        run(fn) => {
+                        run(line, fn) => {
+                            lines.data[line] = updateLine(
+                                model.lines.data[line],
+                                fn
+                            )
+                            ()
+                        }
+                        repeat(line, fn, interval, endAfter) => {
+                            lines.data[line] = updateLine(
+                                model.lines.data[line],
+                                fn
+                            )
+                            lines.data[line].operation = just(
+                                {
+                                    function := fn,
+                                    interval := interval,
+                                    timer := Time:state,
+                                    endAfter := endAfter
+                                }
+                            )
+                            ()
+                        }
+                        endRepeat(line) => {
+                            lines.data[line].operation = nothing()
                             ()
                         }
                     }
+                    lines
                 }
                 operation() => {
                     model.lines |> List:map(
                         updateOperation
                     )
-                    ()
                 }
             }
         }
+    ) |> Signal:latch(
+        inout model.lines
     )
     model
 }
 
-fun update(action : Action, model : Model<nLines, nPixels>) : Model<nLines, nPixels> = {
-    let mut model = model
-    model.lines = model.lines |> List:map(
-        (state) => {
-            let mut state = state
-            match state.operation {
-                just(op) => {
-                    let mut operation = op
-                    Time:every(
-                        operation.interval,
-                        inout operation.timer
-                    ) |> Signal:map(
-                        (_) => just(operation)
-                    ) |> Signal:latch(
-                        inout state.operation
-                    ) |> Signal:map(
-                        (_) => state.pixels
-                    ) |> Signal:latch(
-                        inout state.previousPixels
-                    ) |> Signal:map(
-                        (_) => applyOperation(
-                            operation,
-                            state.previousPixels
-                        )
-                    ) |> Signal:latch(
-                        inout state.pixels
-                    ) |> Signal:map(
-                        (_) => updatePixels(
-                            state
-                        )
-                    ) |> Signal:toUnit(
-                    )
-                }
-                nothing() => {
-                    Signal:constant(())
-                }
-            }
-            state
-        }
-    )
-    model
-}
-
-fun applyOperation(
-    operation : Operation, 
+fun applyFunction(
+    fn : Function, 
     pixels : list<color, nPixels>
 ) : list<color, nPixels> = {
-    match operation.function {
+    match fn {
         rotate(step) => 
             ListExt:rotated(cast(step), pixels)
         set(color) =>
@@ -241,11 +254,22 @@ fun applyOperation(
                 (_) => color,
                 pixels
             )
-        alternate(c1, c2) => 
-            ListExt:replicateList(
-                cast(nPixels),  
-                { data := [c1, c2], length := 2 }
-            )
+        alternate(c1, c2) => {
+            let mut pixels = pixels
+            for i in 0 .. nPixels {
+                pixels.data[i] = if i % 2 == 0 {
+                    c1
+                } else {
+                    c2
+                }
+            }
+            pixels
+            // Does not compile due to codegen bug
+            // ListExt:replicateList(
+            //     cast(nPixels),
+            //     { data := [c1, c2], length := 2 }
+            // )
+        }
     }
 }
 
@@ -278,6 +302,7 @@ fun updatePixels(state : Line<n>) = {
             }
         }
     )
+    show(state.device)
 }
 
 fun setPixelColor(n : uint16, color : color, line : RawDevice) : unit = {

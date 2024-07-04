@@ -1,4 +1,4 @@
-module SignalExit
+module SignalExt
 open(Signal)
 
 fun once(inout state : maybe<t>) : sig<t> = {
