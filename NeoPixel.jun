@@ -17,7 +17,8 @@ rotate(int16)
 | alternate(color, color)
 
 type Action =
-    run(uint8, Function)
+    start()
+    | run(uint8, Function)
     | repeat(uint8, Function, uint32, maybe<uint8>)
     | endRepeat(uint8)
 
@@ -40,14 +41,23 @@ alias Model<nLines : int, nPixels : int> = {
     lines : list<Line<nPixels>, nLines>
 }
 
+let mut startAction : maybe<Action> = just(
+    start()
+)
+
 let mut firstAction : maybe<Action> = just(
     run(
-        1,
-        set(
+        0,
+        alternate(
             RGB(
                 0,
                 0,
                 255
+            ),
+            RGB(
+                0,
+                0,
+                0
             )
         )
     )
@@ -59,6 +69,7 @@ fun actions(
     Signal:mergeMany(
         {
             data := [
+                SignalExt:once(inout startAction),
                 SignalExt:once(inout firstAction),
                 Signal:constant(
                     repeat(
@@ -109,16 +120,9 @@ fun readPixels(device : RawDevice): list<color, n> = {
 
 fun makeDevice(pin : uint16, pixels : uint16) : RawDevice = {
     var ret : ptr
-    #ret = new Adafruit_NeoPixel(pixels, pin, NEO_GRB + NEO_KHZ800);#
+    # ret = new Adafruit_NeoPixel(pixels, pin, NEO_GRB + NEO_KHZ800); #
     NeoPixel:device(ret)
 }
-
-// fun updateAction(action : inout state : Line<nPixels>) = {
-//     match action {
-//         run(fn) => ()
-
-//     }
-// }
 
 fun runOperation(operation : Operation, line : Line<nPixels>) : Line<nPixels> = {
     let mut operation = operation
@@ -200,7 +204,16 @@ fun update(act : maybe<Action>, model : Model<nLines, nPixels>) : Model<nLines, 
                 action(action) => {
                     let mut lines = model.lines
                     match action {
+                        start() => {
+                        # Serial.println("start"); #
+                            model.lines |> List:iter(
+                                (line) => {
+                                    begin(line.device)
+                                }
+                            )
+                        }
                         run(line, fn) => {
+                            # Serial.println("run"); #
                             lines.data[line] = updateLine(
                                 model.lines.data[line],
                                 fn
@@ -208,6 +221,7 @@ fun update(act : maybe<Action>, model : Model<nLines, nPixels>) : Model<nLines, 
                             ()
                         }
                         repeat(line, fn, interval, endAfter) => {
+                            # Serial.println("repeat"); #
                             lines.data[line] = updateLine(
                                 model.lines.data[line],
                                 fn
@@ -223,6 +237,7 @@ fun update(act : maybe<Action>, model : Model<nLines, nPixels>) : Model<nLines, 
                             ()
                         }
                         endRepeat(line) => {
+                            # Serial.println("endRepeat"); #
                             lines.data[line].operation = nothing()
                             ()
                         }
@@ -247,14 +262,19 @@ fun applyFunction(
     pixels : list<color, nPixels>
 ) : list<color, nPixels> = {
     match fn {
-        rotate(step) => 
+        rotate(step) => {
+            # Serial.println("Rotate"); #
             ListExt:rotated(cast(step), pixels)
-        set(color) =>
+        }
+        set(color) => {
+            # Serial.println("Set color"); #
             List:map(
                 (_) => color,
                 pixels
             )
+        }
         alternate(c1, c2) => {
+            # Serial.println("Alternate"); #
             let mut pixels = pixels
             for i in 0 .. nPixels {
                 pixels.data[i] = if i % 2 == 0 {

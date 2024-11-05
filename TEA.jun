@@ -11,7 +11,11 @@ let mut state : Model<1, 150> = initialState(
 
 let mut previousAction : maybe<Action> = nothing()
 
-fun setup() = ()
+fun setup() = {
+    # Serial.begin(9600); #
+    # Serial.println("Set color"); #
+    ()
+}
 fun loop() = {
     Signal:foldP(
         update,
