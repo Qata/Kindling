@@ -1,0 +1,13 @@
+module MaybeExt
+
+fun flatMap(f : (a) -> maybe<b>, maybeVal : maybe<a>) : maybe<b> =
+    match maybeVal {
+        just(val) => f(val)
+        _ => nothing()
+    }
+
+fun flatten(maybeVal : maybe<maybe<a>>) : maybe<a> =
+    match maybeVal {
+        just(val) => val
+        _ => nothing()
+    }

@@ -2,24 +2,50 @@ module TEA
 
 open(NeoPixel)
 
-let mut state : Model<1, 150> = initialState(
+let mut state : Model<1, 150> ref = initialState(
     [
         { pin := 7 }
     ], 
     150
 )
 
-let mut previousAction : maybe<Action> = nothing()
+let mut previousAction : maybe<Action> = just(
+    repeat(
+        0,
+        rotate(1),
+        3000,
+        nothing()
+    )
+)
 
 fun setup() = {
-    # Serial.begin(9600); #
-    # Serial.println("Set color"); #
+    # Serial.begin(115200); #
+    # while (!Serial) {} #
+    # Serial.println("Setup complete"); #
     ()
 }
+
 fun loop() = {
-    Signal:foldP(
-        update,
-        inout state,
-        actions(inout previousAction)
+    # delay(3000); #
+    # Serial.println("_____"); #
+
+    actions(
+        inout previousAction
+    ) |> Signal:sink(
+        (action) => {
+            update(action, state)
+        }
     )
 }
+
+// void xLoop(void * params) {
+//   for (;;) {
+//     TEA::loop();
+//   }
+// }
+// void setup() {
+//     TEA::setup();
+//     xTaskCreatePinnedToCore(xLoop, "loopTask", 8192 * 8, NULL, 1, NULL, ARDUINO_RUNNING_CORE);
+// }
+// void loop() {
+// }
